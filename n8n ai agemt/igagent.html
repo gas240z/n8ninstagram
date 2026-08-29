@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instagram Agent — Панель запуска</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14161A;
+    --surface: #1C1F24;
+    --surface-2: #22262C;
+    --border: #2C3038;
+    --text: #E9E7E1;
+    --muted: #868C96;
+    --accent: #5EE6B0;
+    --accent-dim: #3B8F6C;
+    --warn: #FF8A5C;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(94,230,176,0.06), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    padding:48px 20px 80px;
+  }
+  .wrap{max-width:640px; margin:0 auto;}
+
+  header{margin-bottom:36px;}
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--accent);
+    display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before{
+    content:'';
+    width:6px; height:6px; border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 8px var(--accent);
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:32px;
+    font-weight:600;
+    margin:10px 0 6px;
+    letter-spacing:-0.01em;
+  }
+  .sub{color:var(--muted); font-size:14.5px; line-height:1.5; max-width:52ch;}
+
+  /* Pipeline strip — signature element */
+  .pipeline{
+    display:flex;
+    margin:30px 0 38px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    overflow:hidden;
+    background:var(--surface);
+  }
+  .stage{
+    flex:1;
+    padding:14px 10px;
+    text-align:center;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.04em;
+    color:var(--muted);
+    border-right:1px solid var(--border);
+    position:relative;
+    transition:color .25s ease, background .25s ease;
+  }
+  .stage:last-child{border-right:none;}
+  .stage.active{color:var(--text); background:var(--surface-2);}
+  .stage.active .dot{background:var(--accent); box-shadow:0 0 6px var(--accent);}
+  .stage .dot{
+    width:5px;height:5px;border-radius:50%;
+    background:var(--border);
+    margin:0 auto 8px;
+    transition:background .25s ease;
+  }
+  .stage.skip{opacity:0.3; text-decoration:line-through;}
+
+  form{display:flex; flex-direction:column; gap:22px;}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px 22px;
+  }
+  .card h2{
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--muted);
+    margin:0 0 16px;
+    font-weight:500;
+  }
+
+  label.field{display:block; margin-bottom:16px;}
+  label.field:last-child{margin-bottom:0;}
+  .field-label{
+    display:block;
+    font-size:13px;
+    color:var(--text);
+    margin-bottom:7px;
+    font-weight:500;
+  }
+  .field-hint{color:var(--muted); font-size:12px; margin-top:5px; line-height:1.4;}
+
+  textarea, input[type=text], input[type=url], input[type=datetime-local], select{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:9px;
+    color:var(--text);
+    padding:11px 13px;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  textarea{resize:vertical; min-height:88px; line-height:1.5;}
+  textarea:focus, input:focus, select:focus{border-color:var(--accent-dim);}
+  select{appearance:none; cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23868C96'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 13px center;
+    padding-right:32px;
+  }
+
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:520px){.row2{grid-template-columns:1fr;}}
+
+  .toggle-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 0;
+    border-top:1px solid var(--border);
+  }
+  .toggle-row:first-of-type{border-top:none; padding-top:0;}
+  .toggle-text .field-label{margin-bottom:2px;}
+  .toggle-text .field-hint{margin-top:0;}
+
+  .switch{
+    position:relative; width:40px; height:23px; flex:none; margin-left:16px;
+  }
+  .switch input{opacity:0; width:0; height:0; position:absolute;}
+  .slider{
+    position:absolute; inset:0; background:var(--surface-2);
+    border:1px solid var(--border); border-radius:20px; cursor:pointer;
+    transition:background .2s ease;
+  }
+  .slider::before{
+    content:''; position:absolute; width:15px; height:15px; left:3px; top:3px;
+    background:var(--muted); border-radius:50%; transition:transform .2s ease, background .2s ease;
+  }
+  .switch input:checked + .slider{background:rgba(94,230,176,0.15); border-color:var(--accent-dim);}
+  .switch input:checked + .slider::before{transform:translateX(17px); background:var(--accent);}
+
+  .conditional{
+    max-height:0; overflow:hidden; opacity:0;
+    transition:max-height .25s ease, opacity .2s ease, margin .25s ease;
+  }
+  .conditional.open{max-height:200px; opacity:1; margin-top:14px;}
+
+  button.run{
+    background:var(--accent);
+    color:#0E1512;
+    border:none;
+    border-radius:10px;
+    padding:15px;
+    font-family:'Space Grotesk', sans-serif;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    transition:filter .15s ease, transform .1s ease;
+  }
+  button.run:hover{filter:brightness(1.08);}
+  button.run:active{transform:scale(0.99);}
+  button.run:disabled{opacity:0.55; cursor:not-allowed;}
+  button.run:focus-visible, .switch input:focus-visible + .slider, textarea:focus-visible, input:focus-visible, select:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+
+  .status{
+    font-family:var(--mono);
+    font-size:12.5px;
+    padding:12px 14px;
+    border-radius:9px;
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--muted);
+    display:none;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+  .status.show{display:block;}
+  .status.ok{color:var(--accent); border-color:var(--accent-dim);}
+  .status.err{color:var(--warn); border-color:#7A4A38;}
+
+  details{margin-top:2px;}
+  summary{
+    font-family:var(--mono); font-size:11.5px; color:var(--muted);
+    cursor:pointer; list-style:none; user-select:none;
+  }
+  summary::-webkit-details-marker{display:none;}
+  summary::before{content:'▸ '; }
+  details[open] summary::before{content:'▾ ';}
+  pre.payload{
+    font-family:var(--mono); font-size:11.5px; color:var(--muted);
+    background:var(--surface-2); border:1px solid var(--border);
+    border-radius:8px; padding:12px; margin-top:10px; overflow-x:auto;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Agent · idle</div>
+    <h1>Instagram Agent</h1>
+    <p class="sub">Опишите задачу — агент найдёт материал, соберёт пост и опубликует его через n8n.</p>
+  </header>
+
+  <div class="pipeline" id="pipeline">
+    <div class="stage active" data-stage="prompt"><div class="dot"></div>Промпт</div>
+    <div class="stage active" data-stage="search"><div class="dot"></div>Поиск</div>
+    <div class="stage active" data-stage="draft"><div class="dot"></div>Черновик</div>
+    <div class="stage active" data-stage="review"><div class="dot"></div>Проверка</div>
+    <div class="stage active" data-stage="publish"><div class="dot"></div>Публикация</div>
+  </div>
+
+  <form id="agentForm">
+
+    <div class="card">
+      <h2>Задача</h2>
+      <label class="field">
+        <span class="field-label">Промпт для агента</span>
+        <textarea id="prompt" placeholder="Например: найди новость про запуск нового iPhone и сделай пост с кратким разбором и хэштегами" required></textarea>
+        <span class="field-hint">Агент сам решит, что искать и как это подать — если не указать иначе ниже.</span>
+      </label>
+    </div>
+
+    <div class="card">
+      <h2>Поиск и источники</h2>
+      <div class="toggle-row">
+        <div class="toggle-text">
+          <span class="field-label">Разрешить веб-поиск</span>
+          <span class="field-hint">Агент ищет материал перед тем как писать пост</span>
+        </div>
+        <span class="switch">
+          <input type="checkbox" id="searchEnabled" checked>
+          <span class="slider"></span>
+        </span>
+      </div>
+      <div class="conditional" id="searchOptions">
+        <label class="field">
+          <span class="field-label">Источник поиска</span>
+          <select id="searchSource">
+            <option value="web">Общий веб-поиск</option>
+            <option value="news">Только новости</option>
+            <option value="rss">Заданный список RSS</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Контент поста</h2>
+      <label class="field">
+        <span class="field-label">Стиль изображения</span>
+        <select id="imageStyle">
+          <option value="none">Без картинки (текст/цитата-карточка)</option>
+          <option value="photo" selected>Фотореалистичное</option>
+          <option value="illustration">Иллюстрация</option>
+          <option value="stock">Подобрать из стоков</option>
+        </select>
+      </label>
+      <div class="row2">
+        <label class="field">
+          <span class="field-label">Тон текста</span>
+          <select id="tone">
+            <option value="neutral" selected>Нейтральный</option>
+            <option value="casual">Разговорный</option>
+            <option value="expert">Экспертный</option>
+            <option value="humor">С юмором</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Хэштегов</span>
+          <input type="text" id="hashtagCount" value="5" inputmode="numeric">
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Публикация</h2>
+      <div class="toggle-row">
+        <div class="toggle-text">
+          <span class="field-label">Проверка перед публикацией</span>
+          <span class="field-hint">Прислать черновик на подтверждение в Telegram перед постом</span>
+        </div>
+        <span class="switch">
+          <input type="checkbox" id="requireApproval" checked>
+          <span class="slider"></span>
+        </span>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-text">
+          <span class="field-label">Отложенная публикация</span>
+          <span class="field-hint">Запланировать время вместо немедленного поста</span>
+        </div>
+        <span class="switch">
+          <input type="checkbox" id="scheduleEnabled">
+          <span class="slider"></span>
+        </span>
+      </div>
+      <div class="conditional" id="scheduleOptions">
+        <label class="field">
+          <span class="field-label">Дата и время публикации</span>
+          <input type="datetime-local" id="scheduleTime">
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Подключение к n8n</h2>
+      <label class="field">
+        <span class="field-label">Webhook URL</span>
+        <input type="url" id="webhookUrl" placeholder="https://your-n8n.host/webhook/ig-agent" required>
+        <span class="field-hint">URL Webhook-ноды из вашего workflow в n8n (Production URL).</span>
+      </label>
+    </div>
+
+    <button type="submit" class="run" id="runBtn">Запустить агента →</button>
+
+    <div class="status" id="status"></div>
+
+    <details>
+      <summary>Показать тело запроса (JSON)</summary>
+      <pre class="payload" id="payloadPreview">{}</pre>
+    </details>
+
+  </form>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  const searchEnabled = $('searchEnabled');
+  const searchOptions = $('searchOptions');
+  const scheduleEnabled = $('scheduleEnabled');
+  const scheduleOptions = $('scheduleOptions');
+  const requireApproval = $('requireApproval');
+
+  function syncConditional(toggle, panel){
+    panel.classList.toggle('open', toggle.checked);
+  }
+  searchEnabled.addEventListener('change', () => syncConditional(searchEnabled, searchOptions));
+  scheduleEnabled.addEventListener('change', () => syncConditional(scheduleEnabled, scheduleOptions));
+  syncConditional(searchEnabled, searchOptions);
+  syncConditional(scheduleEnabled, scheduleOptions);
+
+  // Pipeline strip reacts to current settings
+  function syncPipeline(){
+    document.querySelector('[data-stage="search"]').classList.toggle('skip', !searchEnabled.checked);
+    document.querySelector('[data-stage="review"]').classList.toggle('skip', !requireApproval.checked);
+  }
+  searchEnabled.addEventListener('change', syncPipeline);
+  requireApproval.addEventListener('change', syncPipeline);
+  syncPipeline();
+
+  function buildPayload(){
+    return {
+      prompt: $('prompt').value.trim(),
+      search: {
+        enabled: searchEnabled.checked,
+        source: $('searchSource').value
+      },
+      content: {
+        imageStyle: $('imageStyle').value,
+        tone: $('tone').value,
+        hashtagCount: Number($('hashtagCount').value) || 0
+      },
+      publishing: {
+        requireApproval: requireApproval.checked,
+        scheduled: scheduleEnabled.checked,
+        scheduleTime: scheduleEnabled.checked ? $('scheduleTime').value : null
+      },
+      meta: {
+        source: "ig-agent-panel",
+        sentAt: new Date().toISOString()
+      }
+    };
+  }
+
+  function refreshPreview(){
+    $('payloadPreview').textContent = JSON.stringify(buildPayload(), null, 2);
+  }
+  document.getElementById('agentForm').addEventListener('input', refreshPreview);
+  refreshPreview();
+
+  const form = $('agentForm');
+  const status = $('status');
+  const runBtn = $('runBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = $('webhookUrl').value.trim();
+    if(!url){ return; }
+
+    runBtn.disabled = true;
+    runBtn.textContent = 'Отправка…';
+    status.className = 'status show';
+    status.textContent = 'Отправляю запрос в n8n…';
+
+    try{
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildPayload())
+      });
+
+      const text = await res.text();
+      if(res.ok){
+        status.className = 'status show ok';
+        status.textContent = 'Принято n8n (' + res.status + ')\n' + text;
+      } else {
+        status.className = 'status show err';
+        status.textContent = 'Ошибка ' + res.status + '\n' + text;
+      }
+    } catch(err){
+      status.className = 'status show err';
+      status.textContent = 'Не удалось отправить запрос: ' + err.message + '\n(проверьте CORS в настройках Webhook-ноды и доступность URL)';
+    } finally {
+      runBtn.disabled = false;
+      runBtn.textContent = 'Запустить агента →';
+    }
+  });
+</script>
+</body>
+</html>

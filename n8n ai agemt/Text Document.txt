@@ -1,0 +1,451 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai_agent",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -752,
+        -192
+      ],
+      "id": "da352be7-b7d9-493a-9737-51efd5b43d61",
+      "name": "Webhook",
+      "webhookId": "0d17559e-043b-4a54-bf45-1d2d1199a8b8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "744f21c2-67c3-4af3-ad03-df717569ad67",
+              "name": "prompt",
+              "value": "={{ $json.body.prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "68de9b28-018d-450d-b647-ddeb1af71abe",
+              "name": "searchEnabled",
+              "value": "={{ $json.body.search.enabled }}",
+              "type": "string"
+            },
+            {
+              "id": "a917c668-57f8-4156-ae23-2c9ca657523e",
+              "name": "tone",
+              "value": "={{ $json.body.content.tone }}",
+              "type": "string"
+            },
+            {
+              "id": "c68513d6-b715-48a0-90b0-a7eb0122c670",
+              "name": "hashtagCount",
+              "value": "={{ $json.body.content.hashtagCount }}",
+              "type": "string"
+            },
+            {
+              "id": "14b45db7-aa16-4610-b964-1ade6062fb8a",
+              "name": "requireApproval",
+              "value": "={{ $json.body.publishing.requireApproval }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -544,
+        -192
+      ],
+      "id": "bfdcecef-59c5-4ed8-890f-b5e31fc79c4d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "options": {
+          "systemMessage": "Ты — SMM-агент для Instagram. Тебе дают задачу, ты ищешь материал \nчерез инструмент поиска (если он доступен), и готовишь пост по теме, \nкоторую пришлёт пользователь.\n\nТон текста: {{ $json.tone }}\nКоличество хэштегов: {{ $json.hashtagCount }}\n\nЕсли задача содержит названия брендов, персонажей или знаменитостей, \nзащищённых авторским правом — в image_prompt используй общее описание \nбез прямого упоминания названия.\n\nВерни СТРОГО JSON без markdown-обёртки:\n{\n  \"caption\": \"текст поста\",\n  \"hashtags\": [\"тег1\", \"тег2\"],\n  \"image_prompt\": \"описание картинки для генерации, на английском\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -368,
+        -192
+      ],
+      "id": "55b61c94-fbb9-495e-93ad-8ed5ea800b4d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -480,
+        16
+      ],
+      "id": "0d2bce72-b07e-4842-a1d3-2f3207602536",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "4Zez37ThjNA975Gq",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Search the web for current information, news or facts relevant to the user's request. Use before writing the post if up-to-date info is needed",
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            },
+            {
+              "name": "api_key",
+              "value": "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"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        -224,
+        16
+      ],
+      "id": "236a7b9b-6b01-43c6-a7fa-2d8ea117ff0e",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.output;\nconst cleaned = raw.replace(/```json|```/g, '').trim();\nconst parsed = JSON.parse(cleaned);\n\n// Список персонажей/брендов под фильтр (расширяйте по необходимости)\nconst blocklist = /spider-?man|marvel|disney|batman|superman|pokemon|mickey mouse/gi;\nparsed.image_prompt = parsed.image_prompt.replace(blocklist, 'a generic superhero');\n\nreturn [{ json: parsed }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        -192
+      ],
+      "id": "43b17b25-169e-406a-8b7a-01cecf0fb8ca",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "57d7bd14-1b7f-4978-91de-55016b5a0bea",
+              "name": "image_url",
+              "value": "={{ $json.data.url }}",
+              "type": "string"
+            },
+            {
+              "id": "701226dd-98f8-49df-9b61-45cb6c0141c4",
+              "name": "ig_user_id",
+              "value": "17841472108775848",
+              "type": "string"
+            },
+            {
+              "id": "24303e43-736a-4d6e-b1be-a9eedf10f989",
+              "name": "full_caption",
+              "value": "={{ $json.caption }} {{ $json.hashtags.map(h => '#'+h).join(' ') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        688,
+        -192
+      ],
+      "id": "fd77a70f-2e23-4e12-b359-2b5214ac06a1",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.instagram.com/v21.0/{{ $json.ig_user_id }}/media",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "={{ $json.image_url }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.full_caption }}"
+            },
+            {
+              "name": "access_token",
+              "value": "IGAAOCQwNcqWJBZAFlnSkFwTDdKUGtXT2d0amM2Vi1DbEpfUEdXTER3V2tnYnc4ekVraHN3UWxCX0hfSWhPcldrdXAwUFo5VDA3ZAkgxWjBHWl9Pa0NpTzNrSDMzdWt5czZAMcmg2dm55M1o1N2tQTWlQZA3ROVkRYTGJ3SnFqakFYRQZDZD"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        944,
+        -192
+      ],
+      "id": "db253c0a-ab9d-4d00-b4fb-30b32f10d67e",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1152,
+        -192
+      ],
+      "id": "47d0124a-2381-4f29-a1af-07c407e53fd7",
+      "name": "Wait",
+      "webhookId": "5dfe8fd0-30a3-49d3-864a-ea4fce00102c"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.instagram.com/v21.0/{{ $('Edit Fields1').item.json.ig_user_id }}/media_publish",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "creation_id",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "access_token",
+              "value": "IGAAOCQwNcqWJBZAFlnSkFwTDdKUGtXT2d0amM2Vi1DbEpfUEdXTER3V2tnYnc4ekVraHN3UWxCX0hfSWhPcldrdXAwUFo5VDA3ZAkgxWjBHWl9Pa0NpTzNrSDMzdWt5czZAMcmg2dm55M1o1N2tQTWlQZA3ROVkRYTGJ3SnFqakFYRQZDZD"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1344,
+        -192
+      ],
+      "id": "2c9af2d7-ce86-4f84-8726-e906162df6e7",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-image-1-mini",
+          "cachedResultName": "GPT-IMAGE-1-MINI",
+          "cachedResultUrl": ""
+        },
+        "prompt": "={{ $json.image_prompt }}",
+        "options": {
+          "size": "1536x1024"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        -192
+      ],
+      "id": "6ddda83e-e9ad-4ef3-ba9d-ba2a63078d2b",
+      "name": "Generate an image",
+      "credentials": {
+        "openAiApi": {
+          "id": "oxct0YnHivkhp46c",
+          "name": "OpenAI account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload?key=b26ddf61203a04090f6d40a12c7c39e1",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        432,
+        -192
+      ],
+      "id": "05e0f70e-2e7f-47c4-b547-4a3d44151096",
+      "name": "HTTP Request3"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  }
+}
