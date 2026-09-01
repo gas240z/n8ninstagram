@@ -1,0 +1,262 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "adf908e4-2c0a-4334-9d3d-d95aa0a27889",
+              "name": "chatId",
+              "value": "={{ $json.messages[0].from }}",
+              "type": "string"
+            },
+            {
+              "id": "5a39852c-b5ca-4bc8-a89c-8a483170c0d7",
+              "name": "messageText",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "9136053e-947d-4b80-896f-bc83d859feb3",
+              "name": "userName",
+              "value": "={{ $json.contacts[0].profile.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -1648,
+        -352
+      ],
+      "id": "1a5fc5d4-4835-455d-bcb4-a47335a14d88",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.messageText }}",
+        "options": {
+          "systemMessage": "Ты — дружелюбный AI-ассистент в WhatsApp. Отвечай кратко и на том языке, на котором пишет пользователь (русский, азербайджанский или английский).\n\nЕсли пользователь просит сгенерировать, нарисовать, создать или визуализировать изображение — используй инструмент генерации изображений (Generate & Send Image).\n\nКогда вызываешь этот инструмент, составляй промпт (параметр prompt) по следующим правилам:\n1. Промпт всегда должен быть на английском языке, даже если пользователь написал на русском или азербайджанском — переведи и адаптируй смысл.\n2. Промпт должен быть подробным и конкретным: указывай место (город/страну), эпоху/год, архитектурный стиль, окружение (природа, здания, одежда людей той эпохи), атмосферу и освещение.\n3. Никогда не переводи запрос дословно и коротко — разворачивай его в развёрнутое визуальное описание (2-4 предложения), как для художника.\n4. Если в запросе указана историческая эпоха — учитывай реальный исторический контекст этого места и времени (например, для Баку/Азербайджана эпохи VII века — Кавказская Албания, доисламский период, зороастрийское влияние, побережье Каспия, древние крепости, никаких современных зданий или технологий).\n5. Не добавляй в кадр случайных людей крупным планом, если пользователь не просил портрет — фокусируйся на пейзаже, городе, архитектуре согласно запросу.\n6. После успешной генерации напиши пользователю короткое подтверждение на его языке, что изображение создано и отправлено.\n\nЕсли пользователь пишет что-то, не связанное с генерацией изображений — просто веди обычный диалог, помогай и отвечай по существу."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1424,
+        -352
+      ],
+      "id": "db9050e0-079e-49b8-b7df-e1004ec57224",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -1552,
+        -128
+      ],
+      "id": "e23ab7ee-0e98-4ef4-995e-3ad5d81cc86f",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "4yz7bKNbYDtZYqbt",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=   {{ $json.chatId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -1312,
+        -128
+      ],
+      "id": "5dd39658-ad49-45ee-9fa4-8916d7836550",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "=1297778440084961",
+        "recipientPhoneNumber": "={{ $('Edit Fields').item.json.chatId }}",
+        "textBody": "=     {{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -912,
+        -384
+      ],
+      "id": "f5dc1125-119d-42c8-80e1-5b0ddee90d75",
+      "name": "Send message",
+      "webhookId": "ed73f473-c922-4247-8241-f0ba3ea7c143",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "8QtDYNkv28Rr8VZR",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1952,
+        -352
+      ],
+      "id": "be0f001a-361b-47ac-9dee-a363493abeb0",
+      "name": "WhatsApp Trigger",
+      "webhookId": "25fead8c-9e8d-4e0e-8ad0-b0174802a152",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "hwk0BcPzSRYamgiQ",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Use this tool whenever the user asks to generate, create, draw, visualize,\nor make an image.\n\nThe \"prompt\" input MUST be a detailed image-generation prompt written\nin English.\n\nBefore calling the tool, analyze what the user wants to see and create\na visually precise prompt.\n\nIMPORTANT COMPOSITION RULES:\n\n- If the user asks for a city, country, place, landscape, architecture,\n  historical location, or historical event, focus on the environment,\n  architecture and landscape.\n\n- Do NOT generate a portrait unless the user specifically asks for a portrait.\n\n- Do NOT make a single person the main subject when the request is about\n  a city, country, place or historical environment.\n\n- For cities and locations, prefer wide-angle or panoramic compositions.\n\n- For historical scenes, include:\n  historical period,\n  approximate century,\n  architecture,\n  clothing appropriate to the period,\n  geography,\n  landscape,\n  atmosphere,\n  realistic composition.\n\n- Explicitly include negative composition instructions when appropriate:\n  \"no portrait, no close-up face, no single person as the main subject\".\n\nExample:\n\nUser request:\n\"Show me how Baku looked 1400 years ago\"\n\nPrompt:\n\"Wide panoramic historical reconstruction of an ancient settlement\nin the area of modern Baku, Azerbaijan, approximately 1400 years ago,\naround the 7th century AD. Caspian Sea coastline, ancient stone buildings,\nearly Caucasian architecture, historically inspired settlement,\nlocal people in period-appropriate clothing, dry coastal landscape,\nrealistic archaeological atmosphere, cinematic natural lighting,\nhighly detailed environment.\n\nWide establishing shot. Focus on the settlement, architecture and landscape.\nNo portrait, no close-up face, no single person as the main subject.\"",
+        "workflowId": {
+          "__rl": true,
+          "value": "2nPr7qQBzxDEvV3A",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/2nPr7qQBzxDEvV3A",
+          "cachedResultName": "Generate & Send Image"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "prompt": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('prompt', `Detailed English description of the image to generate`, 'string') }}",
+            "chatId": "=={{ $('Edit Fields').item.json.chatId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "chatId",
+              "displayName": "chatId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -1088,
+        -176
+      ],
+      "id": "2a4bc3a6-576a-4b0e-acd2-45ffd9e9d94e",
+      "name": "Call 'Generate & Send Image'"
+    }
+  ],
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Generate & Send Image'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  }
+}
